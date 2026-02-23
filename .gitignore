@@ -1,3 +1,17 @@
+# --- OS Specific ---
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# --- Python & Cache ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+.mypy_cache/
+
 # --- ML Models & Weights (CRITICAL) ---
 models/
 checkpoints/
@@ -54,3 +68,11 @@ build/
 # --- HPC / SLURM Specific ---
 # Ignore temporary job files but keep the .sh scripts
 slurm-*.out
+
+# --- Conda Specific ---
+.conda/
+conda-bld/
+bin/
+lib/
+include/
+share/
