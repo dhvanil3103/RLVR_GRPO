@@ -1,0 +1,56 @@
+# --- ML Models & Weights (CRITICAL) ---
+models/
+checkpoints/
+*.safetensors
+*.bin
+*.pt
+*.pth
+*.joblib
+final_model/
+final_model_awq/
+
+# --- Training Logs & Experiment Tracking ---
+logs/
+*.out
+*.err
+wandb/
+lightning_logs/
+events.out.tfevents.*
+
+# --- Environments & Packages ---
+.venv/
+env/
+venv/
+ENV/
+bin/
+lib/
+develop-eggs/
+dist/
+eggs/
+installed.json
+node_modules/
+package-lock.json
+
+# --- Database & Secrets ---
+.env
+*.sql
+*.sqlite
+postgres_data/
+*.parquet
+
+# --- Python Specific ---
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.ipynb_checkpoints/
+
+# --- Build & Frontend (React/Vite) ---
+dist/
+build/
+.DS_Store
+*.local
+
+# --- HPC / SLURM Specific ---
+# Ignore temporary job files but keep the .sh scripts
+slurm-*.out
