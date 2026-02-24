@@ -76,3 +76,6 @@ bin/
 lib/
 include/
 share/
+
+grpo_project_plan.md
+processed/
