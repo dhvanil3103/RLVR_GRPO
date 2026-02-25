@@ -25,9 +25,9 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model_path",     default="./models/qwen2.5-14b-instruct")
 parser.add_argument("--data_dir",       default="./data/processed/sft")
 parser.add_argument("--output_dir",     default="./checkpoints/sft_smoketest")
-parser.add_argument("--batch_size",     type=int, default=2)
+parser.add_argument("--batch_size",     type=int, default=1)
 parser.add_argument("--grad_accum",     type=int, default=4)
-parser.add_argument("--max_seq_length", type=int, default=8192)
+parser.add_argument("--max_seq_length", type=int, default=2048)
 parser.add_argument("--max_steps",      type=int, default=50)
 parser.add_argument("--n_examples",     type=int, default=50)
 args = parser.parse_args()
@@ -140,4 +140,4 @@ else:
 
 trainer.save_model(args.output_dir)
 print(f"\n  Checkpoint saved to {args.output_dir}")
-print("  You can delete this directory after confirming the smoketest passed.")a
+print("  You can delete this directory after confirming the smoketest passed.")
