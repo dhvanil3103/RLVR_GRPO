@@ -29,9 +29,10 @@ parser.add_argument("--model_path",     default="./models/qwen2.5-7b-instruct")
 parser.add_argument("--data_dir",       default="./data/processed/sft")
 parser.add_argument("--output_dir",     default="./checkpoints/sft")
 parser.add_argument("--run_name",       default="deepmath-sft-14b")
-parser.add_argument("--epochs",         type=int,   default=2)
-parser.add_argument("--batch_size",     type=int,   default=2)
-parser.add_argument("--grad_accum",     type=int,   default=4)
+parser.add_argument("--epochs",         type=int,   default=1)
+parser.add_argument("--batch_size",     type=int,   default=1)
+parser.add_argument("--grad_accum",     type=int,   default=8)
+parser.add_argument("--resume_from_checkpoint", type=bool, default=True)
 parser.add_argument("--lr",             type=float, default=2e-4)
 parser.add_argument("--max_seq_length", type=int,   default=8192)
 parser.add_argument("--lora_r",         type=int,   default=16)
@@ -76,6 +77,7 @@ sft_config = SFTConfig(
     },
     per_device_train_batch_size=args.batch_size,
     max_length=args.max_seq_length,
+    packing=True,
     gradient_accumulation_steps=args.grad_accum,
     gradient_checkpointing_kwargs={"use_reentrant": False},
     gradient_checkpointing=True,
@@ -86,8 +88,9 @@ sft_config = SFTConfig(
     max_grad_norm=1.0,
     bf16=True,
     logging_steps=10,
-    save_strategy="epoch",
-    save_total_limit=2,
+    save_strategy="steps",
+    save_steps=100,
+    save_total_limit=3,
     eval_strategy="no",
     report_to="wandb",
     dataloader_num_workers=4,
