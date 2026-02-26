@@ -25,7 +25,7 @@ from trl import SFTConfig, SFTTrainer
 # Args
 # ---------------------------------------------------------------------------
 parser = argparse.ArgumentParser()
-parser.add_argument("--model_path",     default="./models/qwen2.5-14b-instruct")
+parser.add_argument("--model_path",     default="./models/qwen2.5-7b-instruct")
 parser.add_argument("--data_dir",       default="./data/processed/sft")
 parser.add_argument("--output_dir",     default="./checkpoints/sft")
 parser.add_argument("--run_name",       default="deepmath-sft-14b")
@@ -71,8 +71,13 @@ sft_config = SFTConfig(
     output_dir=args.output_dir,
     run_name=args.run_name,
     num_train_epochs=args.epochs,
+    model_init_kwargs={
+        "local_files_only": True,
+    },
     per_device_train_batch_size=args.batch_size,
+    max_length=args.max_seq_length,
     gradient_accumulation_steps=args.grad_accum,
+    gradient_checkpointing_kwargs={"use_reentrant": False},
     gradient_checkpointing=True,
     learning_rate=args.lr,
     lr_scheduler_type="cosine",
@@ -87,6 +92,7 @@ sft_config = SFTConfig(
     report_to="wandb",
     dataloader_num_workers=4,
     remove_unused_columns=False,
+    ddp_find_unused_parameters=False,
 )
 
 # ---------------------------------------------------------------------------
@@ -103,14 +109,10 @@ processing_class.padding_side = "right"
 # ---------------------------------------------------------------------------
 trainer = SFTTrainer(
     model=args.model_path,
-    model_init_kwargs={
-        "local_files_only": True,
-    },
     args=sft_config,
     train_dataset=train_dataset,
     peft_config=lora_config,
     processing_class=processing_class,
-    max_seq_length=args.max_seq_length,
 )
 
 # ---------------------------------------------------------------------------
