@@ -32,7 +32,6 @@ parser.add_argument("--run_name",       default="deepmath-sft-14b")
 parser.add_argument("--epochs",         type=int,   default=1)
 parser.add_argument("--batch_size",     type=int,   default=1)
 parser.add_argument("--grad_accum",     type=int,   default=8)
-parser.add_argument("--resume_from_checkpoint", type=bool, default=True)
 parser.add_argument("--lr",             type=float, default=2e-4)
 parser.add_argument("--max_seq_length", type=int,   default=8192)
 parser.add_argument("--lora_r",         type=int,   default=16)
@@ -83,7 +82,7 @@ sft_config = SFTConfig(
     gradient_checkpointing=True,
     learning_rate=args.lr,
     lr_scheduler_type="cosine",
-    warmup_steps=780,
+    warmup_steps=143,
     weight_decay=0.01,
     max_grad_norm=1.0,
     bf16=True,
@@ -129,7 +128,21 @@ print(f"  Eff. batch: {args.batch_size * args.grad_accum * 4} "
 print(f"  LR        : {args.lr}")
 print(f"  Max seq   : {args.max_seq_length}")
 
-trainer.train()
+# Auto-detect latest checkpoint if it exists
+checkpoint_dir = None
+if os.path.isdir(args.output_dir):
+    checkpoints = [
+        os.path.join(args.output_dir, d)
+        for d in os.listdir(args.output_dir)
+        if d.startswith("checkpoint-")
+    ]
+    if checkpoints:
+        checkpoint_dir = max(checkpoints, key=lambda x: int(x.split("-")[-1]))
+        print(f"  Resuming from: {checkpoint_dir}")
+    else:
+        print("  No checkpoint found, starting from scratch.")
+
+trainer.train(resume_from_checkpoint=checkpoint_dir)
 trainer.save_model(args.output_dir)
 print(f"\nSFT complete. Adapter saved to {args.output_dir}")
 print("Next: run sft_sanity_check.py in an interactive session, then submit grpo_job.sh")
