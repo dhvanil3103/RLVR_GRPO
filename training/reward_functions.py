@@ -24,6 +24,27 @@ from math_verify import parse, verify
 
 
 # ---------------------------------------------------------------------------
+# Helper: extract plain text from a completion
+#
+# In some TRL versions completions are passed as plain strings.
+# In others they are passed as lists of message dicts like:
+#   [{"role": "assistant", "content": "..."}]
+# This helper normalises both cases to a plain string.
+# ---------------------------------------------------------------------------
+
+def _extract_text(completion) -> str:
+    if isinstance(completion, str):
+        return completion
+    if isinstance(completion, list):
+        # List of message dicts — grab the last assistant turn
+        for msg in reversed(completion):
+            if isinstance(msg, dict) and "content" in msg:
+                return msg["content"]
+        return ""
+    return str(completion)
+
+
+# ---------------------------------------------------------------------------
 # Helper: robust correctness check
 # ---------------------------------------------------------------------------
 
@@ -64,7 +85,8 @@ def accuracy_reward(completions, ground_truth, **kwargs):
     rewards = []
     for completion, gt in zip(completions, ground_truth):
         try:
-            match = re.search(r"<answer>(.*?)</answer>", completion, re.DOTALL)
+            text = _extract_text(completion)
+            match = re.search(r"<answer>(.*?)</answer>", text, re.DOTALL)
             if match:
                 predicted = match.group(1).strip()
                 rewards.append(1.0 if _is_correct(predicted, gt) else 0.0)
@@ -94,17 +116,18 @@ def format_reward(completions, **kwargs):
     """
     rewards = []
     for completion in completions:
+        text = _extract_text(completion)
         score = 0.0
-        has_think  = "<think>" in completion and "</think>" in completion
-        has_answer = "<answer>" in completion and "</answer>" in completion
+        has_think  = "<think>" in text and "</think>" in text
+        has_answer = "<answer>" in text and "</answer>" in text
 
         if has_think:
             score += 0.2
         if has_answer:
             score += 0.2
         if has_think and has_answer:
-            think_pos  = completion.find("<think>")
-            answer_pos = completion.find("<answer>")
+            think_pos  = text.find("<think>")
+            answer_pos = text.find("<answer>")
             if think_pos < answer_pos:
                 score += 0.1
 
@@ -134,24 +157,14 @@ def efficiency_reward(completions, **kwargs):
         Subtracts 0.1 per 4,000 excess chars (~1,000 tokens), floored at
         -0.5. Discourages rambling, repetitive reasoning loops, and
         unnecessary rechecking that adds latency without improving accuracy.
-
-    Why this replaces length_reward:
-        length_reward rewarded longer thinking unconditionally, which would
-        conflict with this function's penalty zone. Using both simultaneously
-        would send contradictory signals past 24k chars.
-
-    On negative rewards in GRPO:
-        GRPO computes group-relative advantages, so the absolute value of a
-        reward matters less than how one completion compares to others in the
-        same group. A -0.5 on a rambling completion vs +0.3 on an efficient
-        one is valid and useful gradient signal.
     """
-    TARGET_START = 9000    # ~1500 words: minimum quality threshold
-    CLIFF_START  = 24000   # ~6000 tokens: maximum efficiency threshold
+    TARGET_START = 4000    # ~1000 tokens: minimum quality threshold
+    CLIFF_START  = 12000   # ~3000 tokens: maximum efficiency threshold
 
     rewards = []
     for completion in completions:
-        match = re.search(r"<think>(.*?)</think>", completion, re.DOTALL)
+        text = _extract_text(completion)
+        match = re.search(r"<think>(.*?)</think>", text, re.DOTALL)
         if not match:
             rewards.append(0.0)
             continue
@@ -159,13 +172,10 @@ def efficiency_reward(completions, **kwargs):
         length = len(match.group(1).strip())
 
         if length < TARGET_START:
-            # Linear ramp: reward effort to reach ~1500 words
             score = 0.3 * (length / TARGET_START)
         elif length <= CLIFF_START:
-            # Plateau: deep thinking is fine, no further reward or penalty
             score = 0.3
         else:
-            # Penalty: subtract 0.1 per ~1000 excess tokens, floor at -0.5
             excess_penalty = 0.1 * ((length - CLIFF_START) / 4000)
             score = max(-0.5, 0.3 - excess_penalty)
 
