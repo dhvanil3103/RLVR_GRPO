@@ -80,3 +80,5 @@ share/
 grpo_project_plan.md
 processed/
 slurm/
+results/
+sft_sanitycheck.py
